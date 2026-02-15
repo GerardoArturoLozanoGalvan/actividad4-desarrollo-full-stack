@@ -20,6 +20,11 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/products", require("./routes/productRoutes"));
 
+// Redirigir raiz a login
+app.get("/", (req, res) => {
+  res.redirect("/login.html");
+});
+
 // Servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Servidor en puerto " + PORT));
