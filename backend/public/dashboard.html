@@ -247,8 +247,10 @@
             'Content-Type': 'application/json',
             'Authorization': getToken()
           },
-          body: JSON.stringify({ name, price })
+          body: JSON.stringify({ name, price: parseFloat(price) })
         });
+        
+        const data = await response.json();
         
         if (response.ok) {
           showMessage('Producto creado correctamente', 'success');
@@ -256,10 +258,10 @@
           document.getElementById('productPrice').value = '';
           loadProducts();
         } else {
-          showMessage('Error al crear producto', 'error');
+          showMessage(data || 'Error al crear producto', 'error');
         }
       } catch(err) {
-        showMessage('Error de conexion', 'error');
+        showMessage('Error: ' + err.message, 'error');
       }
     }
     
