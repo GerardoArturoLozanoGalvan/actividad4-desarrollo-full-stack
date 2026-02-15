@@ -19,12 +19,13 @@ exports.createProduct = async (req,res)=>{
    const product = await Product.create({
      name,
      price: parseFloat(price),
-     userId: req.user?.id || "unknown"
+     userId: req.user.id
    });
    
    res.status(201).json(product);
  } catch(err) {
-   res.status(500).json("Error al crear producto");
+   console.log(err);
+   res.status(500).json("Error al crear producto: " + err.message);
  }
 };
 

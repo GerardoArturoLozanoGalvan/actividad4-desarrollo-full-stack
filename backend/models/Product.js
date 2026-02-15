@@ -3,16 +3,16 @@ const mongoose = require("mongoose");
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true
+    required: [true, "El nombre es requerido"]
   },
   price: {
     type: Number,
-    required: true
+    required: [true, "El precio es requerido"]
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    required: [true, "El usuario es requerido"]
   },
   createdAt: {
     type: Date,
