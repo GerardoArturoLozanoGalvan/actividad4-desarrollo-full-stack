@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Gestor de Productos</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+    }
+    
+    .navbar {
+      background: #667eea;
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .navbar h1 {
+      font-size: 24px;
+    }
+    
+    .logout-btn {
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .logout-btn:hover {
+      background: #ff5252;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+    
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .section h2 {
+      margin-bottom: 15px;
+      color: #333;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    button:hover {
+      background: #5568d3;
+    }
+    
+    .product-item {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .product-info {
+      flex: 1;
+    }
+    
+    .product-name {
+      font-weight: bold;
+      font-size: 16px;
+    }
+    
+    .product-price {
+      color: #667eea;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .product-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .delete-btn {
+      background: #ff6b6b;
+    }
+    
+    .delete-btn:hover {
+      background: #ff5252;
+    }
+    
+    .message {
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      display: none;
+    }
+    
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h1>Gestor de Productos</h1>
+    <button class="logout-btn" onclick="logout()">Cerrar Sesion</button>
+  </div>
+  
+  <div class="container">
+    <div class="message" id="message"></div>
+    
+    <div class="section">
+      <h2>Crear Nuevo Producto</h2>
+      <form onsubmit="createProduct(event)">
+        <div class="form-group">
+          <label>Nombre del Producto</label>
+          <input type="text" id="productName" required>
+        </div>
+        <div class="form-group">
+          <label>Precio</label>
+          <input type="number" id="productPrice" step="0.01" required>
+        </div>
+        <button type="submit">Crear Producto</button>
+      </form>
+    </div>
+    
+    <div class="section">
+      <h2>Mis Productos</h2>
+      <div id="productsList"></div>
+    </div>
+  </div>
+  
+  <script>
+    const API_URL = window.location.origin + "/api";
+    
+    function getToken() {
+      return localStorage.getItem('token');
+    }
+    
+    function showMessage(msg, type) {
+      const element = document.getElementById('message');
+      element.innerHTML = msg;
+      element.className = 'message ' + type;
+      setTimeout(() => element.innerHTML = '', 5000);
+    }
+    
+    async function loadProducts() {
+      try {
+        const response = await fetch(API_URL + '/products', {
+          headers: { 'Authorization': getToken() }
+        });
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            logout();
+            return;
+          }
+          throw new Error('Error al cargar productos');
+        }
+        
+        const products = await response.json();
+        const productsList = document.getElementById('productsList');
+        
+        if (products.length === 0) {
+          productsList.innerHTML = '<p>No hay productos. Crea uno para empezar.</p>';
+          return;
+        }
+        
+        productsList.innerHTML = products.map(p => `
+          <div class="product-item">
+            <div class="product-info">
+              <div class="product-name">${p.name}</div>
+              <div class="product-price">$${p.price}</div>
+            </div>
+            <div class="product-actions">
+              <button class="delete-btn" onclick="deleteProduct('${p._id}')">Eliminar</button>
+            </div>
+          </div>
+        `).join('');
+      } catch(err) {
+        showMessage('Error al cargar productos', 'error');
+      }
+    }
+    
+    async function createProduct(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('productName').value;
+      const price = document.getElementById('productPrice').value;
+      
+      try {
+        const response = await fetch(API_URL + '/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': getToken()
+          },
+          body: JSON.stringify({ name, price })
+        });
+        
+        if (response.ok) {
+          showMessage('Producto creado correctamente', 'success');
+          document.getElementById('productName').value = '';
+          document.getElementById('productPrice').value = '';
+          loadProducts();
+        } else {
+          showMessage('Error al crear producto', 'error');
+        }
+      } catch(err) {
+        showMessage('Error de conexion', 'error');
+      }
+    }
+    
+    async function deleteProduct(id) {
+      if (!confirm('Seguro que quieres eliminar este producto?')) return;
+      
+      try {
+        const response = await fetch(API_URL + '/products/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': getToken() }
+        });
+        
+        if (response.ok) {
+          showMessage('Producto eliminado', 'success');
+          loadProducts();
+        } else {
+          showMessage('Error al eliminar', 'error');
+        }
+      } catch(err) {
+        showMessage('Error de conexion', 'error');
+      }
+    }
+    
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/login.html';
+    }
+    
+    // Cargar productos al iniciar
+    loadProducts();
+  </script>
+</body>
+</html>
